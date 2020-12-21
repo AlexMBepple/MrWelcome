@@ -68,6 +68,7 @@ async def add_intro(ctx, url):
         #then update dictionary file
         with open(r"C:\Programs\mrwelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        await message.add_reaction(":thumbsup:")
 
 #add intro error catch
 @add_intro.error
