@@ -1,40 +1,83 @@
+#  File:        mrwelcome.py
+#  Purpose:     Implementation of our discord welcome bot
+#
+#  Authors:     Ryley McRae and Alex Bepple
+#  Date:        December 19, 2020
+
 import discord
+import pickle
+import time
 from discord.ext import commands
-TOKEN = 'Nzg5OTkxMTE4NDQzMTE4NjIy.X96Gjw.qgGaXsoKqSgwjEWUBtzq__vu0xA'
+
+#get the TOKEN
+tokenfile = open(r"C:\Programs\mrwelcome\very_Important.txt", "r")
+TOKEN = tokenfile.readline()
+# print(TOKEN)
+
+#set the command prefix
 mrwelcome = commands.Bot(command_prefix = '.')
 
+#creats a bot variable of an empty dictionary(basically a global variable for bots)
+mrwelcome.d = {}
 
-# dick = {"": ""}
-
+#ready check and dict import
 @mrwelcome.event
 async def on_ready():
-    print('Bot is ready.')
+    print('Mr.Welcome is ready to welcome.')
+    #reads the dictionary.pickle file and creates a dictionary ADT for the id and url pairs
+    with open(r"C:\Programs\mrwelcome\Dictionary.pickle", 'rb') as handle:
+        mrwelcome.d = pickle.load(handle)
+    print(mrwelcome.d)
 
+#adds mrwelcome to vc when someone joins
 @mrwelcome.event
 async def on_voice_state_update(member, before, after):
-    if before.channel is None and after.channel is not None:
+    if before.channel is None and after.channel is not None and member.id != 789991118443118622:
         channel = after.channel
         # channel.connect()
+        print(member.id)
         await channel.connect()
         #does something
         print('notscuffed')
         time.sleep(5)
         await member.guild.voice_client.disconnect()
 
+#join command
 @mrwelcome.command()
 async def join(ctx):
     channel = ctx.author.voice.channel
+    if ctx.voice_client is not None:
+        return await ctx.voice_client.move_to(channel)
     await channel.connect()
 
+#leave command
 @mrwelcome.command()
 async def leave(ctx):
     await ctx.voice_client.disconnect()
 
+#Add intro
+@mrwelcome.command()
+@commands.has_permissions(manage_messages=True)
+async def add_intro(ctx, url):
+    if "youtu" not in url:
+        await ctx.send('URL must be a valid youtube link')
+    else:
+        #updates or adds id and url to dictionary ADT
+        mrwelcome.d[ctx.author.id] = url
+        print(mrwelcome.d)
+        #then update dictionary file
+        with open(r"C:\Programs\mrwelcome\Dictionary.pickle", 'wb') as handle:
+            pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-#     play(member)
-#
-# play(member)
+#add intro error catch
+@add_intro.error
+async def clear_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('please provide a url as an argument')
 
 
 
+#play function
+
+#starts mrwelcome
 mrwelcome.run(TOKEN)
