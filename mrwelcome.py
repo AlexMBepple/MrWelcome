@@ -55,6 +55,23 @@ async def join(ctx):
 async def leave(ctx):
     await ctx.voice_client.disconnect()
 
+#terminate command
+@mrwelcome.command()
+@commands.has_role("Developer")
+async def terminate(ctx):
+    await mrwelcome.close()
+    time.sleep(0.1) #necessary due to asyncio bug in python3.9 !!!dont remove!!!
+
+#terminate error catch
+@terminate.error
+async def clear_error(ctx, error):
+    if isinstance(error, commands.MissingRole):
+        emoji = '🛑'
+        await ctx.message.add_reaction(emoji)
+        await ctx.send('Sorry, you do not have the necessary role to execute this command.')
+    elif isinstance(error, commands.NoPrivateMessage):
+        await ctx.send('Sorry, I cant run this command from a private message!')
+
 #Add intro
 @mrwelcome.command()
 @commands.has_permissions(manage_messages=True)
