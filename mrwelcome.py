@@ -54,6 +54,22 @@ async def join(ctx):
 @mrwelcome.command()
 async def leave(ctx):
     await ctx.voice_client.disconnect()
+    
+#terminate command
+@mrwelcome.command(ctx)
+@commands.has_role("Developer")
+async def terminate():
+    await mrwelcome.close()
+        
+#terminate error catch
+@terminate.error
+async def clear_error(ctx, error):
+    if isinstance(error, commands.MissingRole):
+        emoji = '🛑'
+        ctx.message.add_reaction(emoji)
+        await ctx.send('Sorry, you do not have the necessary role to execute this command.')
+    elif isinstance(error, commands.NoPrivateMessage):
+        await ctx.send('Sorry, I cant run this command from a private message!')
 
 #Add intro
 @mrwelcome.command()
