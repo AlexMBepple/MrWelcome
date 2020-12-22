@@ -59,6 +59,8 @@ async def leave(ctx):
 @mrwelcome.command()
 @commands.has_role("Developer")
 async def terminate(ctx):
+    emoji = '❌'
+    await ctx.message.add_reaction(emoji)
     await mrwelcome.close()
     time.sleep(0.1) #necessary due to asyncio bug in python3.9 !!!dont remove!!!
 
