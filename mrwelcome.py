@@ -68,11 +68,10 @@ async def add_intro(ctx, url):
         #then update dictionary file
         with open(r"C:\Programs\mrwelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+        #Adds a reaction to the message
         emoji = '\N{THUMBS UP SIGN}'
         # or '\U0001f44d' or '👍'
         await ctx.message.add_reaction(emoji)
-        # await ctx.message.add_reaction(ctx.message,  r":eyes:790735448187469874")
 
 #add intro error catch
 @add_intro.error
