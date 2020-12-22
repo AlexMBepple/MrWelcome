@@ -71,8 +71,6 @@ async def clear_error(ctx, error):
         await ctx.send('Sorry, you do not have the necessary role to execute this command.')
     elif isinstance(error, commands.NoPrivateMessage):
         await ctx.send('Sorry, I cant run this command from a private message!')
-    elif isinstance(error, RuntimeError):
-        print("loops closing")
 
 #Add intro
 @mrwelcome.command()
