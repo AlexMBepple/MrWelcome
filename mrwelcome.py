@@ -9,6 +9,7 @@ import pickle
 import time
 import youtube_dl
 import os
+import pprint
 from discord.ext import commands
 
 intents = discord.Intents.default()
@@ -36,18 +37,27 @@ ydl_opts = {
 }
 
 
+def is_supported(url):
+    extractors = youtube_dl.extractor.gen_extractors()
+    for e in extractors:
+        if e.suitable(url) and e.IE_NAME != 'generic':
+            return True
+    return False
+
+
 # ready check and dict import
 @mrwelcome.event
 async def on_ready():
     print('Mr.Welcome is ready to welcome.')
+    pp = pprint.PrettyPrinter(width=41, compact=True)
     # reads the dictionary.pickle file and creates a dictionary ADT for the
     # id and url pairs
     with open(r"C:\Users\User\Desktop\yes\mrwelcome\Dictionary.pickle", "rb") as handle:
         mrwelcome.d = pickle.load(handle)
-    print(mrwelcome.d)
+        pp.pprint(mrwelcome.d)
     with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'rb') as handle1:
         mrwelcome.meme_d = pickle.load(handle1)
-    print(mrwelcome.meme_d)
+        pp.pprint(mrwelcome.meme_d)
 
 
 # adds mrwelcome to vc when someone joins
@@ -58,19 +68,22 @@ async def on_voice_state_update(member, before, after):
         if bot_status is None:
             vc = after.channel
             await vc.connect()
-            voice = member.guild.voice_client
-            if voice is not None:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([mrwelcome.d[member.id]])
-                for file in os.listdir("./"):
-                    if file.endswith(".mp3"):
-                        os.rename(file, "intro.mp3")
-                voice.play(discord.FFmpegPCMAudio("intro.mp3"))
+        voice = member.guild.voice_client
+        if voice is not None:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([mrwelcome.d[member.id]])
+                dictMeta = ydl.extract_info(mrwelcome.d[member.id])
+                duration = int(dictMeta["duration"])
+            for file in os.listdir("./"):
+                if file.endswith(".mp3"):
+                    os.rename(file, "intro.mp3")
+            voice.play(discord.FFmpegPCMAudio("intro.mp3"))
+            if duration > 7:
                 time.sleep(7.5)  # 7500 milliseconds max
-                await voice.disconnect()
-                os.remove("intro.mp3")
             else:
-                print('discord.Intents.members is likely False.')
+                time.sleep(duration+0.5)
+            await voice.disconnect()
+            os.remove("intro.mp3")
         else:
             # queue the download.
             print('queued.')
@@ -131,25 +144,17 @@ async def clear_error(ctx, error):
 # Add intro
 @mrwelcome.command()
 async def add(ctx, url):
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        bool = ydl.download([url])
-    if bool is not None:
-        # updates or adds id and url to dictionary ADT
+    # updates or adds id and url to dictionary ADT
+    if is_supported(url):
         mrwelcome.d[ctx.author.id] = url
-        # print(mrwelcome.d)
         # then update dictionary file
         with open(r"C:\Users\User\Desktop\yes\mrwelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
         # Adds a reaction to the message
-        emoji = '\N{THUMBS UP SIGN}'
-        # or '\U0001f44d' or '👍'
+        emoji = '👍'
         await ctx.message.add_reaction(emoji)
-        for file in os.listdir("./"):
-            if file.endswith(".mp3"):
-                os.rename(file, "tempintro.mp3")
-        os.remove("tempintro.mp3")
     else:
-        await ctx.send('URL must be a valid youtube link')
+        await ctx.send('Invalid URL.')
 
 
 # add intro error catch
@@ -171,7 +176,6 @@ async def remove(ctx):
         await ctx.send('Intro successfully deleted')
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
-        # print(mrwelcome.d)
     else:
         print('Unexpected error')
 
@@ -191,14 +195,16 @@ async def meme(ctx, arg):
     if arg in mrwelcome.meme_d:
         if ctx.voice_client is None:
             await ctx.author.voice.channel.connect()
-        arg = mrwelcome.meme_d[arg]
+        url = mrwelcome.meme_d[arg]
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([arg])
+            ydl.download([url])
+            dictMeta = ydl.extract_info(url)
+            duration = int(dictMeta["duration"])
         for file in os.listdir("./"):
             if file.endswith(".mp3"):
                 os.rename(file, "meme.mp3")
         ctx.voice_client.play(discord.FFmpegPCMAudio("meme.mp3"))
-        time.sleep(5)
+        time.sleep(duration+0.5)
         await ctx.voice_client.disconnect()
         os.remove("meme.mp3")
     else:
@@ -215,13 +221,27 @@ async def clear_meme_error(ctx, error):
 @mrwelcome.command()
 async def meme_add(ctx, arg, arg_url):
     if arg not in mrwelcome.meme_d:
-        mrwelcome.meme_d[arg] = arg_url
-        # print('added')
-        with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'wb') as handle1:
-            pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
-        emoji = '👍'
-        await ctx.message.add_reaction(emoji)
-    elif arg in mrwelcome.meme_d:
+        if is_supported(arg_url):
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                dictMeta = ydl.extract_info(arg_url)
+                duration = int(dictMeta["duration"])
+                for file in os.listdir("./"):
+                    if file.endswith(".mp3"):
+                        os.rename(file, "meme_temp.mp3")
+                        os.remove('meme_temp.mp3')
+            if duration < 30:
+                mrwelcome.meme_d[arg] = arg_url
+                with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'wb') as handle1:
+                    pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
+                emoji = '👍'
+                await ctx.message.add_reaction(emoji)
+            else:
+                emoji = '🛑'
+                ctx.message.add_reaction(emoji)
+                await ctx.send('Memes must be under 30 seconds.')
+        else:
+            ctx.send('Invalid URL')
+    else:
         await ctx.send('A meme with that name is already taken.')
 
 
