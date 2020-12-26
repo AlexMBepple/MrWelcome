@@ -223,19 +223,37 @@ async def meme_add(ctx, arg, arg_url):
         await ctx.message.add_reaction(emoji)
     elif arg in mrwelcome.meme_d:
         await ctx.send('A meme with that name is already taken.')
-    else:
-        print('Add_Meme Command Exception.')
-        await time.sleep(3600)
 
 
 @meme_add.error
-async def clear_add_meme_error(ctx, error):
+async def clear_meme_add_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Missing required argument. Did you specify the name'
                        ' and/or URL of the meme you would like to add?'
-                       ' Consider using `.add_meme title url`'
+                       ' Consider using `.meme_add title url`'
                        ' where title is the name of the meme you would like to'
                        ' add and URL is the respective URL.')
+
+
+# delete meme command
+@mrwelcome.command()
+async def meme_remove(ctx, arg):
+    if arg not in mrwelcome.meme_d:
+        await ctx.send('That meme does not exist.')
+    else:
+        del mrwelcome.meme_d[arg]
+        with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'wb') as handle1:
+            pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
+        emoji = '👍'
+        await ctx.message.add_reaction(emoji)
+
+
+@meme_remove.error
+async def clear_meme_remove_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('Missing required argument. Did you specify the name'
+                       ' of the meme you would like to add?'
+                       ' Consider using `.meme_remove title`')
 
 
 # list memes command
