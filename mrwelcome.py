@@ -12,6 +12,8 @@ import os
 import pprint
 from discord.ext import commands
 
+# from datetime import datetime
+
 intents = discord.Intents.default()
 intents.members = True
 
@@ -112,7 +114,6 @@ async def leave(ctx):
                        'connected to a voice channel.')
     channel = ctx.author.voice.channel
     if channel is not None:
-        ctx.send('Attempting to leave...')
         await ctx.voice_client.disconnect()
 
 
@@ -169,15 +170,13 @@ async def clear_add_intro_error(ctx, error):
 async def remove(ctx):
     if ctx.author.id not in mrwelcome.d:
         await ctx.send('There is no intro to be removed.')
-    elif mrwelcome.d[ctx.author.id]:
+    else:
         del mrwelcome.d[ctx.author.id]
         with open(r"C:\Users\User\Desktop\yes\mrwelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
         await ctx.send('Intro successfully deleted')
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
-    else:
-        print('Unexpected error')
 
 
 # send current intro url to chat
@@ -225,10 +224,10 @@ async def meme_add(ctx, arg, arg_url):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 dictMeta = ydl.extract_info(arg_url)
                 duration = int(dictMeta["duration"])
-                for file in os.listdir("./"):
-                    if file.endswith(".mp3"):
-                        os.rename(file, "meme_temp.mp3")
-                        os.remove('meme_temp.mp3')
+            for file in os.listdir("./"):
+                if file.endswith(".mp3"):
+                    os.rename(file, "meme_temp.mp3")
+                    os.remove('meme_temp.mp3')
             if duration < 30:
                 mrwelcome.meme_d[arg] = arg_url
                 with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'wb') as handle1:
@@ -236,8 +235,8 @@ async def meme_add(ctx, arg, arg_url):
                 emoji = '👍'
                 await ctx.message.add_reaction(emoji)
             else:
-                emoji = '🛑'
-                ctx.message.add_reaction(emoji)
+                emoji = '❌'
+                await ctx.message.add_reaction(emoji)
                 await ctx.send('Memes must be under 30 seconds.')
         else:
             ctx.send('Invalid URL')
@@ -280,11 +279,11 @@ async def clear_meme_remove_error(ctx, error):
 @mrwelcome.command()
 async def meme_list(ctx):
     if mrwelcome.meme_d:
-        memes = str(list(mrwelcome.meme_d.keys()))
+        memes = str(sorted(mrwelcome.meme_d.keys()))
         memes = memes.replace("[", "")
         memes = memes.replace("]", "")
         memes = memes.replace("'", "")
-        await ctx.send('the current memes that can be used with'
+        await ctx.send('The current memes that can be used with'
                        ' `.meme` are:\n\n{}'.format(memes))
     else:
         await ctx.send('No memes have been added.')
