@@ -90,7 +90,7 @@ async def on_voice_state_update(member, before, after):
             # queue the download.
             print('queued.')
     elif before.channel is None and after.channel is not None and member.id != 789991118443118622:
-        print('Member does not have an intro in the dictionary')
+        print('Member does not have an intro in the dictionary.')
 
 
 # join command
@@ -103,6 +103,7 @@ async def join(ctx):
                        'channel to use that command.')
     else:
         channel = ctx.author.voice.channel
+        await ctx.send('**Joined** `{}`'.format(channel))
         return await channel.connect()
 
 
@@ -110,10 +111,10 @@ async def join(ctx):
 @mrwelcome.command()
 async def leave(ctx):
     if ctx.voice_client is None:
-        await ctx.send('The bot is not currently '
-                       'connected to a voice channel.')
-    channel = ctx.author.voice.channel
-    if channel is not None:
+        return await ctx.send('The bot is not currently '
+                              'connected to a voice channel.')
+    else:
+        await ctx.send('**Successfully disconnected**')
         await ctx.voice_client.disconnect()
 
 
@@ -121,7 +122,8 @@ async def leave(ctx):
 @mrwelcome.command()
 @commands.has_role('Developer')
 async def terminate(ctx):
-    emoji = '❌'
+    await ctx.send('**TERMINATING...**')
+    emoji = '✅'
     await ctx.message.add_reaction(emoji)
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
@@ -138,7 +140,7 @@ async def clear_error(ctx, error):
         await ctx.send('Sorry, you do not have the necessary '
                        'role to execute this command.')
     elif isinstance(error, commands.NoPrivateMessage):
-        await ctx.send('Sorry, I cant run this '
+        await ctx.send('I cannot run this '
                        'command from a private message!')
 
 
@@ -146,6 +148,8 @@ async def clear_error(ctx, error):
 @mrwelcome.command()
 async def add(ctx, url):
     # updates or adds id and url to dictionary ADT
+    if url in mrwelcome.meme_d.keys():
+        url = mrwelcome.meme_d[url]
     if is_supported(url):
         mrwelcome.d[ctx.author.id] = url
         # then update dictionary file
@@ -154,6 +158,7 @@ async def add(ctx, url):
         # Adds a reaction to the message
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
+        await ctx.send('**Intro sound successfully added.**')
     else:
         await ctx.send('Invalid URL.')
 
@@ -162,7 +167,9 @@ async def add(ctx, url):
 @add.error
 async def clear_add_intro_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('please provide a url as an argument')
+        await ctx.send('Missing required argument. Did you specify the '
+                       ' URL of the intro sound you would like to add?'
+                       " Consider using `.add 'url'`")
 
 
 # remove intro
@@ -174,16 +181,16 @@ async def remove(ctx):
         del mrwelcome.d[ctx.author.id]
         with open(r"C:\Users\User\Desktop\yes\mrwelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        await ctx.send('Intro successfully deleted')
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
+        await ctx.send('**Intro sound successfully deleted.**')
 
 
 # send current intro url to chat
 @mrwelcome.command()
 async def current(ctx):
     if ctx.author.id in mrwelcome.d:
-        await ctx.send("Your current intro is: {}".format(str(mrwelcome.d[ctx.author.id])))
+        await ctx.send('**Your current intro is:** {}'.format(str(mrwelcome.d[ctx.author.id])))
     else:
         await ctx.send('You currently have no intro set.')
 
@@ -202,6 +209,7 @@ async def meme(ctx, arg):
         for file in os.listdir("./"):
             if file.endswith(".mp3"):
                 os.rename(file, "meme.mp3")
+        await ctx.send('**Playing meme:** `{}`'.format(arg))
         ctx.voice_client.play(discord.FFmpegPCMAudio("meme.mp3"))
         time.sleep(duration+0.5)
         await ctx.voice_client.disconnect()
@@ -213,7 +221,9 @@ async def meme(ctx, arg):
 @meme.error
 async def clear_meme_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('Missing required argument. Did you specify the name of the meme?')
+        await ctx.send('Missing required argument. Did you specify the name'
+                       ' of the meme?'
+                       " Consider using `.meme 'name'`")
 
 
 # voice channel add meme to dictionary / pickle file command
@@ -234,6 +244,7 @@ async def meme_add(ctx, arg, arg_url):
                     pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
                 emoji = '👍'
                 await ctx.message.add_reaction(emoji)
+                await ctx.send('**Meme succesfully added.**')
             else:
                 emoji = '❌'
                 await ctx.message.add_reaction(emoji)
@@ -249,9 +260,7 @@ async def clear_meme_add_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Missing required argument. Did you specify the name'
                        ' and/or URL of the meme you would like to add?'
-                       ' Consider using `.meme_add title url`'
-                       ' where title is the name of the meme you would like to'
-                       ' add and URL is the respective URL.')
+                       " Consider using `.meme_add 'name' 'url'`")
 
 
 # delete meme command
@@ -265,6 +274,7 @@ async def meme_remove(ctx, arg):
             pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
+        await ctx.send('**Meme successfully removed.**')
 
 
 @meme_remove.error
@@ -272,7 +282,7 @@ async def clear_meme_remove_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Missing required argument. Did you specify the name'
                        ' of the meme you would like to remove?'
-                       ' Consider using `.meme_remove title`')
+                       " Consider using `.meme_remove 'name'`")
 
 
 # list memes command
@@ -283,8 +293,8 @@ async def meme_list(ctx):
         memes = memes.replace("[", "")
         memes = memes.replace("]", "")
         memes = memes.replace("'", "")
-        await ctx.send('The current memes that can be used with'
-                       ' `.meme` are:\n\n{}'.format(memes))
+        await ctx.send('**The current memes that can be used with**'
+                       ' `.meme` **are:**\n\n{}'.format(memes))
     else:
         await ctx.send('No memes have been added.')
 
