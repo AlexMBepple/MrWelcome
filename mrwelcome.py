@@ -271,7 +271,7 @@ async def meme_remove(ctx, arg):
 async def clear_meme_remove_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Missing required argument. Did you specify the name'
-                       ' of the meme you would like to add?'
+                       ' of the meme you would like to remove?'
                        ' Consider using `.meme_remove title`')
 
 
