@@ -10,6 +10,7 @@ import time
 import youtube_dl
 import os
 import pprint
+import math
 from discord.ext import commands
 
 # from datetime import datetime
@@ -91,6 +92,76 @@ async def on_voice_state_update(member, before, after):
             print('queued.')
     elif before.channel is None and after.channel is not None and member.id != 789991118443118622:
         print('Member does not have an intro in the dictionary.')
+
+
+# give colour event
+@mrwelcome.event
+async def on_raw_reaction_add(payload=discord.RawReactionActionEvent):
+    if payload.channel_id == 795775258275610645:
+        if str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa5':
+            print('red.')
+            red_role = payload.member.guild.get_role(795777553432182785)
+            await payload.member.add_roles(red_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa9':
+            print('green.')
+            green_role = payload.member.guild.get_role(795777697585954907)
+            await payload.member.add_roles(green_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa6':
+            print('blue.')
+            blue_role = payload.member.guild.get_role(795777844151975997)
+            await payload.member.add_roles(blue_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa7':
+            print('orange.')
+            orange_role = payload.member.guild.get_role(795777880016551956)
+            await payload.member.add_roles(orange_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xaa':
+            print('purple.')
+            purple_role = payload.member.guild.get_role(795777912540364810)
+            await payload.member.add_roles(purple_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa8':
+            print('yellow.')
+            yellow_role = payload.member.guild.get_role(795778011999109170)
+            await payload.member.add_roles(yellow_role)
+        elif str(payload.emoji).encode() == b'\xe2\xac\x9b':
+            print('black.')
+            black_role = payload.member.guild.get_role(795778011999109170)
+            await payload.member.add_roles(black_role)
+
+
+# give colour event
+@mrwelcome.event
+async def on_raw_reaction_remove(payload=discord.RawReactionActionEvent):
+    if payload.channel_id == 795775258275610645:
+        guild = mrwelcome.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        if str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa5':
+            print('remove red.')
+            red_role = guild.get_role(795777553432182785)
+            await member.remove_roles(red_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa9':
+            print('remove green.')
+            green_role = guild.get_role(795777697585954907)
+            await member.remove_roles(green_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa6':
+            print('remove blue.')
+            blue_role = guild.get_role(795777844151975997)
+            await member.remove_roles(blue_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa7':
+            print('remove orange.')
+            orange_role = guild.get_role(795777880016551956)
+            await member.remove_roles(orange_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xaa':
+            print('remove purple.')
+            purple_role = guild.get_role(795777912540364810)
+            await member.remove_roles(purple_role)
+        elif str(payload.emoji).encode() == b'\xf0\x9f\x9f\xa8':
+            print('remove yellow.')
+            yellow_role = guild.get_role(795778011999109170)
+            await member.remove_roles(yellow_role)
+        elif str(payload.emoji).encode() == b'\xe2\xac\x9b':
+            print('remove black.')
+            black_role = guild.get_role(795778011999109170)
+            await member.remove_roles(black_role)
 
 
 # join command
@@ -198,24 +269,29 @@ async def current(ctx):
 # voice channel meme command
 @mrwelcome.command()
 async def meme(ctx, arg):
-    if arg in mrwelcome.meme_d:
-        if ctx.voice_client is None:
-            await ctx.author.voice.channel.connect()
-        url = mrwelcome.meme_d[arg]
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-            dictMeta = ydl.extract_info(url)
-            duration = int(dictMeta["duration"])
-        for file in os.listdir("./"):
-            if file.endswith(".mp3"):
-                os.rename(file, "meme.mp3")
-        await ctx.send('**Playing meme:** `{}`'.format(arg))
-        ctx.voice_client.play(discord.FFmpegPCMAudio("meme.mp3"))
-        time.sleep(duration+0.5)
-        await ctx.voice_client.disconnect()
-        os.remove("meme.mp3")
+    if ctx.author.voice is not None:
+        if arg in mrwelcome.meme_d:
+            if ctx.voice_client is None:
+                await ctx.author.voice.channel.connect()
+            url = mrwelcome.meme_d[arg]
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+                dictMeta = ydl.extract_info(url)
+                duration = int(dictMeta["duration"])
+            for file in os.listdir("./"):
+                if file.endswith(".mp3"):
+                    os.rename(file, "meme.mp3")
+            await ctx.send('**Playing meme:** `{}`'.format(arg))
+            ctx.voice_client.play(discord.FFmpegPCMAudio("meme.mp3"))
+            time.sleep(duration+0.5)
+            await ctx.voice_client.disconnect()
+            os.remove("meme.mp3")
+        else:
+            await ctx.send('Could not find the meme you are looking for.')
     else:
-        await ctx.send('Could not find the meme you are looking for.')
+        emoji = '❌'
+        await ctx.message.add_reaction(emoji)
+        await ctx.send('**You must be in a voice channel to use this command.**')
 
 
 @meme.error
@@ -297,6 +373,19 @@ async def meme_list(ctx):
                        ' `.meme` **are:**\n\n{}'.format(memes))
     else:
         await ctx.send('No memes have been added.')
+
+
+# meme amount command
+@mrwelcome.command()
+async def meme_howmany(ctx):
+    await ctx.send('**{} memes have been added.**'.format(len(mrwelcome.meme_d)))
+
+# ping command
+@mrwelcome.command()
+async def ping(ctx):
+    ping = mrwelcome.latency
+    ping = math.floor(ping * 1000)
+    await ctx.send('Pong! **{0} ms**'.format(ping, 1))
 
 
 # starts mrwelcome
