@@ -1,4 +1,4 @@
-#  File:        mrwelcome.py
+#!/usr/bin/python
 #  Purpose:     Implementation of our discord welcome bot
 #
 #  Authors:     Ryley McRae and Alex Bepple
@@ -11,6 +11,8 @@ import youtube_dl
 import os
 import pprint
 import math
+import re
+import random
 from discord.ext import commands
 
 # from datetime import datetime
@@ -32,6 +34,7 @@ mrwelcome.meme_d = {}
 
 ydl_opts = {
     'format': 'bestaudio/best',
+    'quiet': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
@@ -67,6 +70,7 @@ async def on_ready():
 @mrwelcome.event
 async def on_voice_state_update(member, before, after):
     if member.id in mrwelcome.d and before.channel is None and after.channel is not None:
+        print('{} Joined. Playing intro...'.format(member.name))
         bot_status = member.guild.me.voice
         if bot_status is None:
             vc = after.channel
@@ -76,22 +80,25 @@ async def on_voice_state_update(member, before, after):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([mrwelcome.d[member.id]])
                 dictMeta = ydl.extract_info(mrwelcome.d[member.id])
-                duration = int(dictMeta["duration"])
+            duration = int(dictMeta["duration"])
+            dictMeta["title"] = re.sub('\W+', '', dictMeta["title"])
+            print(dictMeta["title"])
             for file in os.listdir("./"):
                 if file.endswith(".mp3"):
-                    os.rename(file, "intro.mp3")
-            voice.play(discord.FFmpegPCMAudio("intro.mp3"))
+                    os.rename(file, "{}.mp3".format(dictMeta["title"]))
+            voice.play(discord.FFmpegPCMAudio("{}.mp3".format(dictMeta["title"])))
             if duration > 7:
                 time.sleep(7.5)  # 7500 milliseconds max
             else:
                 time.sleep(duration+0.5)
             await voice.disconnect()
-            os.remove("intro.mp3")
+            time.sleep(0.1)
+            os.remove("{}.mp3".format(dictMeta["title"]))
         else:
             # queue the download.
             print('queued.')
     elif before.channel is None and after.channel is not None and member.id != 789991118443118622:
-        print('Member does not have an intro in the dictionary.')
+        print('{} has no intro set.'.format(member.name))
 
 
 # give colour event
@@ -124,7 +131,7 @@ async def on_raw_reaction_add(payload=discord.RawReactionActionEvent):
             await payload.member.add_roles(yellow_role)
         elif str(payload.emoji).encode() == b'\xe2\xac\x9b':
             print('black.')
-            black_role = payload.member.guild.get_role(795778011999109170)
+            black_role = payload.member.guild.get_role(795778052276748331)
             await payload.member.add_roles(black_role)
 
 
@@ -160,7 +167,7 @@ async def on_raw_reaction_remove(payload=discord.RawReactionActionEvent):
             await member.remove_roles(yellow_role)
         elif str(payload.emoji).encode() == b'\xe2\xac\x9b':
             print('remove black.')
-            black_role = guild.get_role(795778011999109170)
+            black_role = guild.get_role(795778052276748331)
             await member.remove_roles(black_role)
 
 
@@ -185,8 +192,8 @@ async def leave(ctx):
         return await ctx.send('The bot is not currently '
                               'connected to a voice channel.')
     else:
-        await ctx.send('**Successfully disconnected**')
         await ctx.voice_client.disconnect()
+        await ctx.send('**Successfully disconnected**')
 
 
 # terminate command
@@ -194,10 +201,13 @@ async def leave(ctx):
 @commands.has_role('Developer')
 async def terminate(ctx):
     await ctx.send('**TERMINATING...**')
-    emoji = '✅'
-    await ctx.message.add_reaction(emoji)
+    for file in os.listdir("./"):
+        if file.endswith(".mp3"):
+            os.remove(file)
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
+    emoji = '✅'
+    await ctx.message.add_reaction(emoji)
     await mrwelcome.close()
     time.sleep(0.1)  # necessary due to asyncio bug in python3.9
 
@@ -269,6 +279,8 @@ async def current(ctx):
 # voice channel meme command
 @mrwelcome.command()
 async def meme(ctx, arg):
+    if arg == "random":
+        arg = random.choice(list(mrwelcome.meme_d.keys()))
     if ctx.author.voice is not None:
         if arg in mrwelcome.meme_d:
             if ctx.voice_client is None:
@@ -277,15 +289,17 @@ async def meme(ctx, arg):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 dictMeta = ydl.extract_info(url)
-                duration = int(dictMeta["duration"])
+            duration = int(dictMeta["duration"])
+            dictMeta["title"] = re.sub('\W+', '', dictMeta["title"])
             for file in os.listdir("./"):
                 if file.endswith(".mp3"):
-                    os.rename(file, "meme.mp3")
+                    os.rename(file, "{}.mp3".format(dictMeta["title"]))
             await ctx.send('**Playing meme:** `{}`'.format(arg))
-            ctx.voice_client.play(discord.FFmpegPCMAudio("meme.mp3"))
+            ctx.voice_client.play(discord.FFmpegPCMAudio("{}.mp3".format(dictMeta["title"])))
+            print("Playing meme: {}".format(arg))
             time.sleep(duration+0.5)
             await ctx.voice_client.disconnect()
-            os.remove("meme.mp3")
+            os.remove("{}.mp3".format(dictMeta["title"]))
         else:
             await ctx.send('Could not find the meme you are looking for.')
     else:
@@ -305,7 +319,7 @@ async def clear_meme_error(ctx, error):
 # voice channel add meme to dictionary / pickle file command
 @mrwelcome.command()
 async def meme_add(ctx, arg, arg_url):
-    if arg not in mrwelcome.meme_d:
+    if arg not in mrwelcome.meme_d and arg != 'random':
         if is_supported(arg_url):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 dictMeta = ydl.extract_info(arg_url)
@@ -314,7 +328,7 @@ async def meme_add(ctx, arg, arg_url):
                 if file.endswith(".mp3"):
                     os.rename(file, "meme_temp.mp3")
                     os.remove('meme_temp.mp3')
-            if duration < 30:
+            if duration < 35:
                 mrwelcome.meme_d[arg] = arg_url
                 with open(r"C:\Users\User\Desktop\yes\mrwelcome\meme.pickle", 'wb') as handle1:
                     pickle.dump(mrwelcome.meme_d, handle1, protocol=pickle.HIGHEST_PROTOCOL)
@@ -324,9 +338,11 @@ async def meme_add(ctx, arg, arg_url):
             else:
                 emoji = '❌'
                 await ctx.message.add_reaction(emoji)
-                await ctx.send('Memes must be under 30 seconds.')
+                await ctx.send('Memes must be under 35 seconds.')
         else:
-            ctx.send('Invalid URL')
+            await ctx.send('Invalid URL')
+    elif arg == 'random':
+        await ctx.send("**No.**")
     else:
         await ctx.send('A meme with that name is already taken.')
 
@@ -380,6 +396,7 @@ async def meme_list(ctx):
 async def meme_howmany(ctx):
     await ctx.send('**{} memes have been added.**'.format(len(mrwelcome.meme_d)))
 
+
 # ping command
 @mrwelcome.command()
 async def ping(ctx):
@@ -387,6 +404,16 @@ async def ping(ctx):
     ping = math.floor(ping * 1000)
     await ctx.send('Pong! **{0} ms**'.format(ping, 1))
 
+
+# fix command
+@mrwelcome.command()
+async def fix(ctx):
+    if ctx.voice_client is not None:
+        await ctx.voice_client.disconnect()
+    for file in os.listdir("./"):
+        if file.endswith(".mp3"):
+            os.remove(file)
+    await ctx.send("**Fixed.**")
 
 # starts mrwelcome
 mrwelcome.run(TOKEN)
