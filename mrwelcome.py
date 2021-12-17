@@ -5,20 +5,47 @@
 #  Date:        December 19, 2020
 
 import discord
+import youtube_dl
 import pickle
 import time
+import requests
 from discord.ext import commands
+from discord.utils import get
+from discord import FFmpegPCMAudio
+from youtube_dl import YoutubeDL
+from requests import get
+
+#Get videos from links or from youtube search
+def search(query):
+    with YoutubeDL({'format': 'bestaudio', 'noplaylist':'True'}) as ydl:
+        try: requests.get(arg)
+        except: info = ydl.extract_info(f"ytsearch:{arg}", download=False)['entries'][0]
+        else: info = ydl.extract_info(arg, download=False)
+    return (info, info['formats'][0]['url'])
 
 #get the TOKEN
 tokenfile = open(r"C:\Programs\mrwelcome\very_Important.txt", "r")
 TOKEN = tokenfile.readline()
-# print(TOKEN)
 
 #set the command prefix
 mrwelcome = commands.Bot(command_prefix = '.')
 
 #creats a bot variable of an empty dictionary(basically a global variable for bots)
 mrwelcome.d = {}
+
+ydl_opts= {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
 
 #ready check and dict import
 @mrwelcome.event
@@ -34,13 +61,39 @@ async def on_ready():
 async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None and member.id != 789991118443118622:
         channel = after.channel
-        # channel.connect()
-        print(member.id)
         await channel.connect()
+
         #does something
+        await self.invoke(self.mrwelcome.get_command('play'), url = mrwelcome.d[member.id])
         print('notscuffed')
         time.sleep(5)
+
+
+
         await member.guild.voice_client.disconnect()
+
+########make a fucking play command for gods sake
+
+
+@mrwelcome.command()
+async def play(ctx, *, query):
+    #Solves a problem I'll explain later
+    FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+
+    video, source = search(query)
+    print(video)
+    voice = get(bot.voice_clients, guild=ctx.guild)
+
+    voice.play(FFmpegPCMAudio(source, **FFMPEG_OPTS), after=lambda e: print('done', e))
+    voice.is_playing()
+
+
+
+
+
+
+
+
 
 #join command
 @mrwelcome.command()
@@ -97,10 +150,6 @@ async def add_intro(ctx, url):
 async def clear_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('please provide a url as an argument')
-
-
-
-#play function
 
 #starts mrwelcome
 mrwelcome.run(TOKEN)
