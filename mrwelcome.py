@@ -4,6 +4,7 @@
 #  Date:        December 19, 2020
 
 import discord
+import youtube_dl
 import pickle
 import time
 import youtube_dl
@@ -13,6 +14,18 @@ import math
 import re
 import random
 from discord.ext import commands
+from discord.utils import get
+from discord import FFmpegPCMAudio
+from youtube_dl import YoutubeDL
+from requests import get
+
+#Get videos from links or from youtube search
+def search(query):
+    with YoutubeDL({'format': 'bestaudio', 'noplaylist':'True'}) as ydl:
+        try: requests.get(arg)
+        except: info = ydl.extract_info(f"ytsearch:{arg}", download=False)['entries'][0]
+        else: info = ydl.extract_info(arg, download=False)
+    return (info, info['formats'][0]['url'])
 
 # from datetime import datetime
 
@@ -22,7 +35,6 @@ intents.members = True
 # get the TOKEN
 tokenfile = open(r"C:\Programs\mrwelcome\very_Important.txt", "r")
 TOKEN = tokenfile.readline()
-# print(TOKEN)
 
 # set the command prefix
 mrwelcome = commands.Bot(command_prefix='.', intents=intents)
@@ -49,8 +61,21 @@ def is_supported(url):
             return True
     return False
 
+ydl_opts= {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
 
-# ready check and dict import
+#ready check and dict import
 @mrwelcome.event
 async def on_ready():
     print('Mr.Welcome is ready to welcome.')
