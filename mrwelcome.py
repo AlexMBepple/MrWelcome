@@ -284,7 +284,7 @@ async def remove(ctx):
         await ctx.send('There is no intro to be removed.')
     else:
         del mrwelcome.d[ctx.author.id]
-        with open(r"C:\Programs\github\MrWelcome"\Dictionary.pickle", 'wb') as handle:
+        with open(r"C:\Programs\github\MrWelcome\Dictionary.pickle", 'wb') as handle:
             pickle.dump(mrwelcome.d, handle, protocol=pickle.HIGHEST_PROTOCOL)
         emoji = '👍'
         await ctx.message.add_reaction(emoji)
