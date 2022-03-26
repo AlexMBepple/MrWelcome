@@ -110,14 +110,24 @@ async def on_voice_state_update(member, before, after):
             for file in os.listdir("./"):
                 if file.endswith(".m4a"):
                     os.rename(file, "{}.m4a".format(dictMeta["title"]))
-            voice.play(discord.FFmpegPCMAudio("{}.m4a".format(dictMeta["title"])))
-            if duration > 7:
-                time.sleep(7.5)  # 7500 milliseconds max
-            else:
-                time.sleep(duration+0.5)
-            await voice.disconnect()
-            time.sleep(0.1)
-            os.remove("{}.m4a".format(dictMeta["title"]))
+                    voice.play(discord.FFmpegPCMAudio("{}.m4a".format(dictMeta["title"])))
+                    if duration > 7:
+                        time.sleep(7.5)  # 7500 milliseconds max
+                    else:
+                        time.sleep(duration+0.5)
+                    await voice.disconnect()
+                    time.sleep(0.1)
+                    os.remove("{}.m4a".format(dictMeta["title"]))
+                elif file.endswith(".webm"):
+                    os.rename(file, "{}.webm".format(dictMeta["title"]))
+                    voice.play(discord.FFmpegPCMAudio("{}.webm".format(dictMeta["title"])))
+                    if duration > 7:
+                        time.sleep(7.5)  # 7500 milliseconds max
+                    else:
+                        time.sleep(duration+0.5)
+                    await voice.disconnect()
+                    time.sleep(0.1)
+                    os.remove("{}.webm".format(dictMeta["title"]))
         else:
             # queue the download.
             print('queued.')
@@ -226,7 +236,7 @@ async def leave(ctx):
 async def terminate(ctx):
     await ctx.send('**TERMINATING...**')
     for file in os.listdir("./"):
-        if file.endswith(".m4a"):
+        if file.endswith(".m4a") or file.endswith(".webm"):
             os.remove(file)
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
@@ -318,12 +328,20 @@ async def meme(ctx, arg):
             for file in os.listdir("./"):
                 if file.endswith(".m4a"):
                     os.rename(file, "{}.m4a".format(dictMeta["title"]))
-            await ctx.send('**Playing meme:** `{}`'.format(arg))
-            ctx.voice_client.play(discord.FFmpegPCMAudio("{}.m4a".format(dictMeta["title"])))
-            print("Playing meme: {}".format(arg))
-            time.sleep(duration+0.5)
-            await ctx.voice_client.disconnect()
-            os.remove("{}.m4a".format(dictMeta["title"]))
+                    await ctx.send('**Playing meme:** `{}`'.format(arg))
+                    ctx.voice_client.play(discord.FFmpegPCMAudio("{}.m4a".format(dictMeta["title"])))
+                    print("Playing meme: {}".format(arg))
+                    time.sleep(duration+0.5)
+                    await ctx.voice_client.disconnect()
+                    os.remove("{}.m4a".format(dictMeta["title"]))
+
+                elif file.endswith(".webm"):
+                    os.rename(file, "{}.webm".format(dictMeta["title"]))
+                    await ctx.send('**Playing meme:** `{}`'.format(arg))
+                    ctx.voice_client.play(discord.FFmpegPCMAudio("{}.webm".format(dictMeta["title"])))
+                    time.sleep(duration+0.5)
+                    await ctx.voice_client.disconnect()
+                    os.remove("{}.webm".format(dictMeta["title"]))
         else:
             await ctx.send('Could not find the meme you are looking for.')
     else:
@@ -352,6 +370,9 @@ async def meme_add(ctx, arg, arg_url):
                 if file.endswith(".m4a"):
                     os.rename(file, "meme_temp.m4a")
                     os.remove('meme_temp.m4a')
+                elif file.endswith(".webm"):
+                    os.rename(file, "meme_temp.webm")
+                    os.remove('meme_temp.webm')
             if duration < 35:
                 mrwelcome.meme_d[arg] = arg_url
                 with open(r"C:\Programs\github\MrWelcome\meme.pickle", 'wb') as handle1:
@@ -435,7 +456,7 @@ async def fix(ctx):
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
     for file in os.listdir("./"):
-        if file.endswith(".m4a"):
+        if file.endswith(".m4a") or file.endswith(".webm"):
             os.remove(file)
     await ctx.send("**Fixed.**")
 
