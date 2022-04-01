@@ -1,6 +1,6 @@
 #       "Mr Welcome" written using discord.py API
 #       Ryley McRae and Alex Bepple
-#       Newest additions:  December 15, 2021
+#       Newest additions:  March 31, 2022
 
 import discord
 import pickle
